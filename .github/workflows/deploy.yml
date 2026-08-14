@@ -20,7 +20,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # Step 2: Build with detailed error tracing turned on (--errors -X)
+      # Step 2: Build App with Maven
       - name: Build and Package App with Maven
         run: |
           chmod +x mvnw
@@ -33,7 +33,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Step 4: Build and Push Docker Image
+      # Step 4: Build and Push Docker Image (Using SHA tag)
       - name: Build and Push Docker Image
         run: |
           docker build -t sushmakandapu/employee-api:${{ github.sha }} .
@@ -47,11 +47,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
-      # Step 6: Force ECS Update
-      - name: Force ECS Update
-        run: |
-          aws ecs update-service \
-            --cluster employee-cluster \
-            --service employee-service \
-            --force-new-deployment \
-            --task-definition employee-api-task
+      # Step 6: Update the Image Tag in the Task Definition template
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: employee-api
+          image: sushmakandapu/employee-api:${{ github.sha }}
+
+      # Step 7: Deploy the updated Task Definition to ECS
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: employee-service
+          cluster: employee-cluster
+          wait-for-service-stability: true
