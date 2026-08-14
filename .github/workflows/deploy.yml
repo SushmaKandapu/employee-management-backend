@@ -20,9 +20,9 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          # Replace 'your-dockerhub-username' with your actual Docker Hub username
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/employee-api:latest .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/employee-api:latest
+          # Use your exact lowercase Docker Hub username here explicitly
+          docker build -t sushmakandapu/employee-api:latest .
+          docker push sushmakandapu/employee-api:latest
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
