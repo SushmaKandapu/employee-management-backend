@@ -1,0 +1,37 @@
+name: Deploy to AWS ECS via Docker Hub
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        run: |
+          # Replace 'your-dockerhub-username' with your actual Docker Hub username
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/employee-api:latest .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/employee-api:latest
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Force ECS Update
+        run: |
+          # Replace cluster and service names with your exact AWS names
+          aws ecs update-service --cluster employee-cluster --service employee-service --force-new-deployment
